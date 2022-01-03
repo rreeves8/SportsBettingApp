@@ -14,10 +14,9 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
+        backgroundColor: "#20232a"
     },
     title: {
-        marginLeft: 10,
-        marginRight: 10,
         marginTop: 55,
         paddingVertical: 8,
         borderWidth: 4,
@@ -25,10 +24,14 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         backgroundColor: "#61dafb",
         color: "#20232a",
+    },
+    titleText: {
         textAlign: "center",
         fontSize: 30,
         fontWeight: "bold"
     },
+    
+
     logInButton: {
         marginLeft: 150,
         marginRight: 150,

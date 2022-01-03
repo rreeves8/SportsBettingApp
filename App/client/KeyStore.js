@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import crypto from "react-native-crypto"
 import random from "secure-random"
 var aesjs = require('aes-js');
 

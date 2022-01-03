@@ -39,7 +39,6 @@ class NewUser extends Component {
         return (
             <View style={styles.logInContainer}>
                 <Text style={styles.title}>LOGIN</Text>
-
                 <SafeAreaView>
                     <TextInput
                         style={styles.input}
@@ -54,7 +53,6 @@ class NewUser extends Component {
                         keyboardType="default"
                     />
                 </SafeAreaView>
-
                 <View style={styles.logInButton}>
                     <Button
                         onPress={this.buttonPress}
