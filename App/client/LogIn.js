@@ -4,17 +4,18 @@ import styles from './Styles';
 import * as LocalAuthentication from 'expo-local-authentication'
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { isLoggedIn, logOut, addUser } from './KeyStore';
+import { isLoggedIn } from './KeyStore';
+import { logInAPI } from './api/api'
 
 const Stack = createNativeStackNavigator();
 
-class NewUser extends Component {
+class InputUser extends Component {
     constructor(props) {
         super(props);
         this.state = {
             usr: "",
             pass: "",
-            LogInHandeler: props.LogInHandeler
+            nav: props.nav
         }
     }
 
@@ -31,8 +32,14 @@ class NewUser extends Component {
     }
 
     buttonPress = () => {
-        addUser('@' + this.state.usr, '@' + this.state.pass)
-        this.state.LogInHandeler()
+        logInAPI().then((data) => {
+            console.log(data)
+            if (data === 'ok') {
+                this.state.nav.navigate("MainPage")
+            }
+        })
+
+
     }
 
     render() {
@@ -108,19 +115,21 @@ const FaceId = ({ navigation }) => {
 
 const LogIn = (properties) => {
     const [type, setType] = useState("NewUser")
-
     useEffect(() => {
         async function HollyFuckThisISGay() {
             const yesno = await isLoggedIn()
             if (yesno) {
                 setType("FaceId")
             }
+            else {
+                setType("InputUser")
+            }
         }
         HollyFuckThisISGay()
     }, [])
 
     return (
-        <NavigationContainer>
+        <NavigationContainer independent={true}>
             <Stack.Navigator
                 initialRouteName={type}
                 screenOptions={{
@@ -128,9 +137,9 @@ const LogIn = (properties) => {
                 }}
             >
                 <Stack.Screen
-                    name="NewUser"
+                    name="InputUser"
                 >
-                    {props => <NewUser {...props} LogInHandeler={properties.LogInHandeler} />}
+                    {props => <InputUser {...props} nav={properties.navigation} />}
                 </Stack.Screen>
 
                 <Stack.Screen

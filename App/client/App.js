@@ -72,25 +72,13 @@ const MainPage = ({ navigation }) => {
     );
 }
 
-
 class App extends Component {
     constructor() {
         super();
         this.state = {
-            page: "MainPage",
+            page: "LogIn",
             Stack: createNativeStackNavigator()
         }
-        /*
-        this.state = {
-            page: <LogIn LogInHandeler={this.LogInHandeler} />
-        }
-        */
-    }
-
-    LogInHandeler = (data) => {
-        this.setState({
-            page: "MainPage"
-        })
     }
 
     render() {
@@ -98,6 +86,7 @@ class App extends Component {
         return (
             <NavigationContainer independent={true}>
                 <Stack.Navigator
+                    initialRouteName = {this.state.page}
                     screenOptions={{
                         headerShown: false
                     }}
@@ -113,6 +102,10 @@ class App extends Component {
                     <Stack.Screen
                         name = "BrowsePublicPools"
                         component ={PublicPools}
+                    />
+                    <Stack.Screen
+                        name="LogIn"
+                        component={LogIn}
                     />
                 </Stack.Navigator>
             </NavigationContainer>

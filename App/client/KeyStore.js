@@ -1,15 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import random from "secure-random"
-var aesjs = require('aes-js');
 
-const getKey = (password) => {
-    return crypto.scryptSync(password, random(10, {type: 'Buffer'}), 32);
+const getEncryptedPassword = (password) => {
+    return crypto.scryptSync(password, random(10, { type: 'Buffer' }), 32);
 }
 
-const storeData = async (usr, pass) => {
+const storeData = async (type, data) => {
     try {
-        await AsyncStorage.setItem('@usr', value)
-        await AsyncStorage.setItem('@password', pass)
+        await AsyncStorage.setItem('@' + type, data)
     } catch (e) {
         console.log(e)
         throw e
@@ -18,31 +16,27 @@ const storeData = async (usr, pass) => {
 
 const getData = async (type) => {
     try {
-        const value = await AsyncStorage.getItem(type)
-        if(value != null){
-            return value;
-        }
-
+        return await AsyncStorage.getItem('@' + type)
     } catch (e) {
         console.log(e)
         throw e
     }
 }
 
-export function addUser(user, password){
+export function addUser(user, password) {
     var aesCtr = new aesjs.ModeOfOperation.ctr(getKey(password), new aesjs.Counter(5));
     var textBytes = aesjs.utils.utf8.toBytes(password)
     var encryptedBytes = aesCtr.encrypt(textBytes)
-    storeData(aesjs.utils.hex.fromBytes(encryptedBytes))
+    //storeData(aesjs.utils.hex.fromBytes(encryptedBytes))
 }
 
-export function isCorrect(password){
+export function isCorrect(password) {
     var aesCtr = new aesjs.ModeOfOperation.ctr(getKey(password), new aesjs.Counter(5));
 
     getData('@password').then((encryptedBytes) => {
         var decryptedBytes = aesCtr.decrypt(encryptedBytes);
         var decryptedText = aesjs.utils.utf8.fromBytes(decryptedBytes);
-    
+
         if (decryptedText === password) {
             return true;
         }
@@ -52,15 +46,23 @@ export function isCorrect(password){
     })
 }
 
-export async function isLoggedIn(){
+export async function isLoggedIn() {
     let data = await getData('@password')
- 
-    if (typeof data === 'undefined'){
+
+    if (typeof data === 'undefined') {
         return false
     }
-    else{
+    else {
         return true
     }
+}
+
+export async function getKey(key) {
+    return await getData(key)
+}
+
+export function storeKey(key, data) {
+    storeData(key, data)
 }
 
 export async function logOut() {
@@ -68,9 +70,10 @@ export async function logOut() {
         await AsyncStorage.removeItem('@password');
         return true;
     }
-    catch(exception) {
+    catch (exception) {
         return false;
     }
 }
 
-export default { addUser, isCorrect, isLoggedIn , logOut }
+
+export default { addUser, isCorrect, isLoggedIn, logOut, getKey, storeKey }
