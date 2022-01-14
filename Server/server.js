@@ -1,15 +1,18 @@
-const express = require("express");
-var bodyParser = require('body-parser');
-const { response } = require("express");
+import express, { response } from "express"
+import { rsa, clientRSA } from './database/cryptography/RSA.js'
+import { logIn, getToken } from "./database/mongo/fetch.js"
+import { hasToken, deviceIsRegistered } from "./database/mongo/conditions.js"
+import { generateToken, verifyToken } from './database/tokens/Token.js';
+import { addDevice, addToken } from './database/mongo/insert.js'
+import { tokenatedMethods, tokenExpireyTime } from './ServerConfig.js'
+
 const app = express();
 
-var RSAKey = require('react-native-rsa');
-const res = require("express/lib/response");
-const bits = 1024;
-const exponent = '10001'; // must be a string
+let serverRSA
 
-var rsa = new RSAKey();
-var r = rsa.generate(bits, exponent);
+rsa().then((data) => {
+    serverRSA = data
+})
 
 app.use(
     (request, response, next) => {
@@ -27,12 +30,7 @@ app.use(
         }
     },
     (request, response, next) => {
-        //console.log(request.headers["user-agent"])
-        next()
-    },
-    (request, response, next) => {
         if (request.method === 'POST') {
-
             let type = request.headers['content-type']
             let bodyStream = '';
 
@@ -62,7 +60,10 @@ app.use(
     },
     (request, response, next) => {
         const cmd = request.url
-        if (cmd === '/getFriends') {
+        if (tokenatedMethods.includes(cmd)) {
+            let decrypted = rsa.decrypt(request.body.encrypted)
+
+            console.log(verifyToken(decrypted.token))
             if (request.body.token === "123") {
                 next()
             }
@@ -76,29 +77,66 @@ app.use(
     }
 )
 
-let clientPublicKey 
-
 app.get("/getPublicKey", (request, response) => {
-    response.json({ key: rsa.getPublicString() })
+    response.json({ key: serverRSA.getPublicString() })
 })
 
-app.post('/setDeviceID', (request, response) => {
-    let userAgent = request.headers["user-agent"].split(' ')[0]
+app.post("/registerDevice")
 
-    let id = request.body.id
+app.post("/login", async (request, response) => {
+    let deviceID = serverRSA.decrypt(request.body.deviceID)
 
-    clientPublicKey = JSON.parse(request.body.key)
-    
-    response.send("ok")
+    let clientKey = request.body.publicKey
+
+    let credentials = {
+        email: serverRSA.decrypt(request.body.credentials.email),
+        password: serverRSA.decrypt(request.body.credentials.password)
+    }
+
+    let clientRSAOBJ = clientRSA(clientKey)
+
+    if (deviceID === null) {
+        response.json({ status: clientRSAOBJ.encrypt("bad key")})
+    }
+    else {
+        let isLoggedIn = await logIn(credentials)
+
+        let responseJSON = {
+            token: '',
+            status: ''
+        }
+
+        if (isLoggedIn === "OK") {
+            let isReg = await deviceIsRegistered(credentials.email)
+
+            if (!isReg) {
+                addDevice(credentials.email, deviceID, clientKey)
+            }
+
+            let doesHaveToken = await hasToken(credentials.email)
+
+            let token
+            if (doesHaveToken) {
+                token = await getToken(credentials.email)
+            }
+            if (!doesHaveToken) {
+                token = generateToken(credentials.email)
+                addToken(credentials.email, token)
+            }
+
+            responseJSON.token = token
+            responseJSON.status = clientRSAOBJ.encrypt("Logged In")
+            response.send(JSON.stringify(responseJSON))
+        }
+        else {
+            responseJSON.status = clientRSAOBJ.encrypt(isLoggedIn)
+            response.send(JSON.stringify(responseJSON))
+        }
+    }
 })
 
-app.post("/login", (request, response) => {
-    console.log(request.body)
-    
-    let decrypted = rsa.decrypt(request.body);
+app.post('/register', (request, response) => {
 
-
-    response.json({ status: "ok" })
 })
 
 app.get("/freindList", (request, response) => {
